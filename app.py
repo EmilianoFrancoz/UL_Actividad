@@ -1,87 +1,579 @@
+
 import streamlit as st
 import random
+import math
 
-st.set_page_config(page_title='Gestalt Kids', page_icon='🧠', layout='wide')
+st.set_page_config(
+    page_title="Gestalt Kids",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-CSS = '''<style>
-.stApp {background:linear-gradient(135deg,#f7f9ff,#fff8ed);color:#24304b}
-.block-container {padding-top:1.5rem;max-width:1100px}
-h1,h2,h3 {color:#28336a}
-[data-testid="stSidebar"] {background:#eaf0ff}
-.kid-card {background:white;border:2px solid #dfe7ff;border-radius:20px;padding:22px;margin:12px 0;box-shadow:0 6px 18px #23336912}
-.hero {background:linear-gradient(120deg,#dce6ff,#ffe7bc);padding:25px;border-radius:24px}
-.big-emoji {font-size:64px;text-align:center}
-.small-note {color:#4b5874;font-size:1.05rem}
-</style>'''
-st.markdown(CSS, unsafe_allow_html=True)
+# --------------------------------------------------
+# ESTILOS
+# --------------------------------------------------
 
-LESSONS = [
- ('🔵','Proximidad','Las cosas que están cerquita parecen formar un equipo.','Mira los grupos de puntos. ¿Cuántos grupos ves?', 'Dos grupos', ['Un grupo','Dos grupos','Cinco grupos'], 'Dos grupos', 'Los puntos están separados en dos conjuntos, ¡y tu cerebro los agrupa!'),
- ('🎨','Similitud','Agrupamos las cosas que se parecen en color, forma o tamaño.','¿Qué figuras forman un equipo por su forma?', 'Los círculos', ['Los círculos','Todas por igual','Ninguna'], 'Los círculos', 'Aunque estén mezclados, los círculos se parecen entre sí.'),
- ('🧩','Cierre','Tu cerebro completa las partes que faltan de una figura.','Aunque le falte un pedacito, ¿qué figura reconoces?', 'Un círculo', ['Un triángulo','Un círculo','Un cuadrado'], 'Un círculo', '¡Tu cerebro completa el círculo aunque no esté cerrado!'),
- ('➡️','Continuidad','Preferimos seguir caminos suaves y continuos.','¿Cuál camino parece continuar sin doblarse?', 'El camino recto', ['El camino recto','El camino en zigzag','Ninguno'], 'El camino recto', 'Tu mirada sigue con facilidad las líneas continuas.'),
- ('👀','Figura y fondo','Podemos distinguir lo que miramos del fondo que lo rodea.','¿Qué figura destaca sobre el fondo?', 'La estrella', ['El fondo','La estrella','Las dos igual'], 'La estrella', 'La estrella es la figura y el rectángulo claro es el fondo.'),
- ('🤝','Destino común','Los objetos que se mueven en la misma dirección parecen pertenecer al mismo grupo.','¿Qué flechas parecen ir juntas?', 'Las que apuntan a la derecha', ['Las que apuntan a la derecha','Todas','Ninguna'], 'Las que apuntan a la derecha', 'Cuando varias cosas van hacia el mismo lado, las vemos como equipo.'),
- ('⭐','Simetría','Las formas equilibradas a ambos lados de un eje nos parecen relacionadas.','¿Qué dibujo es simétrico?', 'La mariposa', ['La mariposa','La forma irregular','Ambos'], 'La mariposa', 'Los dos lados de la mariposa se parecen como en un espejo.'),
+st.markdown("""
+<style>
+.stApp {
+    background: #F7FAFF;
+    color: #233451;
+}
+
+section[data-testid="stSidebar"] {
+    background: #E5EEFF;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #233451 !important;
+}
+
+h1, h2, h3, p, label {
+    color: #233451;
+}
+
+div.stButton > button {
+    background: #4361EE;
+    color: white !important;
+    border: none;
+    border-radius: 14px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 700;
+}
+
+div.stButton > button:hover {
+    background: #3048C5;
+    color: white !important;
+}
+
+.hero {
+    background: linear-gradient(120deg, #DFE8FF, #FFE8BA);
+    border-radius: 22px;
+    padding: 28px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 22px;
+    border: 2px solid #DCE6FF;
+    border-radius: 18px;
+    margin-bottom: 15px;
+}
+
+.visual {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    border: 2px solid #DCE6FF;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.small-note {
+    color: #526581;
+    font-size: 15px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# ACTIVIDADES
+# --------------------------------------------------
+
+ACTIVIDADES = [
+    "🔵 Proximidad",
+    "🎨 Similitud",
+    "🧩 Cierre",
+    "➡️ Continuidad",
+    "👀 Figura y fondo",
+    "🐟 Destino común",
+    "⭐ Simetría"
 ]
 
-def visual(idx):
-    if idx == 0:
-        return '''<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Dos grupos de cinco puntos"><g fill="#5378e8">''' + ''.join(f'<circle cx="{95+(j%3)*36+(i*260)}" cy="{65+(j//3)*48}" r="13"/>' for i in range(2) for j in range(6)) + '</g></svg>'
-    if idx == 1:
-        shapes = ''.join(f'<circle cx="{95+i*90}" cy="75" r="22" fill="#5378e8"/>' if i%2==0 else f'<rect x="{72+i*90}" y="52" width="46" height="46" rx="5" fill="#f5aa38"/>' for i in range(5))
-        return f'<svg viewBox="0 0 600 160" width="100%" role="img" aria-label="Círculos azules y cuadrados amarillos alternados">{shapes}</svg>'
-    if idx == 2:
-        return '<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Círculo incompleto"><circle cx="300" cy="103" r="68" fill="none" stroke="#5378e8" stroke-width="14" stroke-dasharray="350 80" stroke-linecap="round"/></svg>'
-    if idx == 3:
-        return '<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Camino recto y camino zigzag"><path d="M40 60 H550" stroke="#5378e8" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M40 150 L140 105 L240 185 L340 105 L440 185 L550 145" stroke="#f5aa38" stroke-width="10" fill="none" stroke-linejoin="round"/></svg>'
-    if idx == 4:
-        return '<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Estrella morada sobre fondo claro"><rect x="50" y="15" width="500" height="180" rx="18" fill="#dfe9ff"/><polygon points="300,25 321,80 380,80 333,117 351,176 300,140 249,176 267,117 220,80 279,80" fill="#8058d8"/></svg>'
-    if idx == 5:
-        return '<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Cuatro flechas hacia la derecha y una hacia arriba"><g font-size="65" font-weight="bold"><text x="80" y="85" fill="#5378e8">→ → →</text><text x="230" y="175" fill="#f5aa38">↑</text></g></svg>'
-    return '<svg viewBox="0 0 600 210" width="100%" role="img" aria-label="Mariposa simétrica"><line x1="300" y1="15" x2="300" y2="200" stroke="#888" stroke-dasharray="6 6"/><ellipse cx="240" cy="77" rx="65" ry="48" transform="rotate(25 240 77)" fill="#8058d8"/><ellipse cx="360" cy="77" rx="65" ry="48" transform="rotate(-25 360 77)" fill="#8058d8"/><ellipse cx="257" cy="146" rx="40" ry="32" fill="#f5aa38"/><ellipse cx="343" cy="146" rx="40" ry="32" fill="#f5aa38"/><rect x="293" y="47" width="14" height="116" rx="7" fill="#26356c"/></svg>'
+EXPLICACIONES = {
+    "🔵 Proximidad":
+        "Nuestro cerebro agrupa las cosas que están cerca unas de otras.",
 
-if 'done' not in st.session_state: st.session_state.done = set()
-if 'selected' not in st.session_state: st.session_state.selected = '🏠 Inicio'
+    "🎨 Similitud":
+        "Nuestro cerebro reúne objetos que se parecen en color, forma o tamaño.",
 
-st.sidebar.title('🧠 Gestalt Kids')
-st.sidebar.caption('¡Aprende jugando!')
-items = ['🏠 Inicio'] + [f'{x[0]} {x[1]}' for x in LESSONS]
-choice = st.sidebar.radio('Elige una actividad:', items, index=items.index(st.session_state.selected) if st.session_state.selected in items else 0)
-st.session_state.selected = choice
-st.sidebar.divider()
-st.sidebar.progress(len(st.session_state.done)/7)
-st.sidebar.write(f'⭐ {len(st.session_state.done)} de 7 retos completados')
-st.sidebar.caption('Tu progreso se conserva mientras dura esta sesión.')
+    "🧩 Cierre":
+        "Aunque falten partes de una figura, nuestro cerebro intenta completarla.",
 
-if choice == '🏠 Inicio':
-    st.markdown('<div class="hero"><h1>🌈 ¡Bienvenido a Gestalt Kids!</h1><p style="font-size:21px">Tu cerebro es un detective: descubre formas, grupos y patrones en todo lo que ves.</p></div>', unsafe_allow_html=True)
-    st.subheader('¿Qué es la Gestalt?')
-    st.write('La Gestalt es una forma de explicar cómo nuestro cerebro organiza lo que vemos. ¡A veces encontramos figuras y grupos sin darnos cuenta!')
-    st.info('👈 Abre el menú de la izquierda y elige uno de los siete retos. Observa, responde y gana una estrella.')
-    cols = st.columns(2)
-    for i, (emoji,name,*_) in enumerate(LESSONS):
-        with cols[i%2]:
-            st.markdown(f'<div class="kid-card"><h3>{emoji} {name}</h3><p>{"⭐ ¡Completado!" if i in st.session_state.done else "🎮 Listo para jugar"}</p></div>', unsafe_allow_html=True)
-            if st.button(f'Explorar {name}', key=f'go_{i}'):
-                st.session_state.selected = items[i+1]
-                st.rerun()
-else:
-    idx = items.index(choice)-1
-    emoji,name,explanation,question,_,options,correct,feedback = LESSONS[idx]
-    st.title(f'{emoji} Actividad {idx+1}: {name}')
-    st.markdown(f'<div class="kid-card"><h3>💡 Descubre el principio</h3><p style="font-size:21px">{explanation}</p></div>', unsafe_allow_html=True)
-    st.markdown(visual(idx), unsafe_allow_html=True)
-    st.subheader('🎯 Tu reto')
-    st.write(question)
-    answer = st.radio('Elige una respuesta:', options, index=None, key=f'answer_{idx}')
-    if st.button('✨ Comprobar respuesta', key=f'check_{idx}', type='primary'):
-        if answer is None: st.warning('Primero elige una respuesta 😊')
-        elif answer == correct:
-            st.session_state.done.add(idx)
-            st.success(f'🎉 ¡Correcto! {feedback} Ganaste una estrella ⭐')
-            st.balloons()
-        else: st.error('¡Buen intento! Mira la imagen otra vez y prueba de nuevo. 💪')
-    if idx in st.session_state.done: st.caption('⭐ Actividad completada en esta sesión.')
+    "➡️ Continuidad":
+        "Preferimos seguir caminos y líneas que parecen continuar suavemente.",
+
+    "👀 Figura y fondo":
+        "Nuestro cerebro separa lo que estamos mirando del fondo que lo rodea.",
+
+    "🐟 Destino común":
+        "Los objetos que se mueven en la misma dirección parecen formar un grupo.",
+
+    "⭐ Simetría":
+        "Reconocemos fácilmente las figuras cuyos lados se parecen como un espejo."
+}
+
+PREGUNTAS = {
+    "🔵 Proximidad": (
+        "¿Por qué vemos grupos de círculos?",
+        [
+            "Porque están cerca unos de otros",
+            "Porque todos se mueven",
+            "Porque son invisibles"
+        ],
+        0
+    ),
+
+    "🎨 Similitud": (
+        "¿Qué hace que agrupemos las figuras?",
+        [
+            "Su posición en la pantalla",
+            "Su parecido en color o forma",
+            "El sonido que producen"
+        ],
+        1
+    ),
+
+    "🧩 Cierre": (
+        "¿Por qué reconocemos una figura incompleta?",
+        [
+            "Porque nuestro cerebro completa lo que falta",
+            "Porque la figura se mueve",
+            "Porque no tiene ningún significado"
+        ],
+        0
+    ),
+
+    "➡️ Continuidad": (
+        "¿Qué camino suele seguir nuestra mirada?",
+        [
+            "El que cambia bruscamente",
+            "El que parece continuar suavemente",
+            "Ninguno"
+        ],
+        1
+    ),
+
+    "👀 Figura y fondo": (
+        "¿Qué hace nuestro cerebro al observar una imagen?",
+        [
+            "Ignora todos los objetos",
+            "Separa la figura principal del fondo",
+            "Ve únicamente colores"
+        ],
+        1
+    ),
+
+    "🐟 Destino común": (
+        "¿Por qué agrupamos objetos que se mueven juntos?",
+        [
+            "Porque siguen una dirección parecida",
+            "Porque tienen diferentes tamaños",
+            "Porque están quietos"
+        ],
+        0
+    ),
+
+    "⭐ Simetría": (
+        "¿Qué significa que una figura sea simétrica?",
+        [
+            "Que tiene muchos colores",
+            "Que está incompleta",
+            "Que sus lados se corresponden como en un espejo"
+        ],
+        2
+    )
+}
+
+
+# --------------------------------------------------
+# ESTADO DE LA APLICACIÓN
+# --------------------------------------------------
+
+if "pagina" not in st.session_state:
+    st.session_state.pagina = "🏠 Inicio"
+
+if "completadas" not in st.session_state:
+    st.session_state.completadas = set()
+
+if "respuestas" not in st.session_state:
+    st.session_state.respuestas = {}
+
+
+def navegar(pagina):
+    st.session_state.pagina = pagina
+    st.rerun()
+
+
+def completar(actividad):
+    if actividad not in st.session_state.completadas:
+        st.session_state.completadas.add(actividad)
+        st.balloons()
+
+
+# --------------------------------------------------
+# ILUSTRACIONES SVG
+# --------------------------------------------------
+
+def mostrar_svg(contenido):
+    st.markdown(
+        f'<div class="visual">{contenido}</div>',
+        unsafe_allow_html=True
+    )
+
+
+def circulo(x, y, color="#4361EE", radio=15):
+    return (
+        f'<circle cx="{x}" cy="{y}" r="{radio}" '
+        f'fill="{color}"/>'
+    )
+
+
+def ilustracion(actividad, variante=0):
+
+    svg = (
+        '<svg viewBox="0 0 600 260" '
+        'xmlns="http://www.w3.org/2000/svg" '
+        'style="width:100%;max-width:650px;height:auto">'
+    )
+
+    if actividad == "🔵 Proximidad":
+        separacion = 18 if variante == 0 else 27
+
+        for grupo in [130, 430]:
+            for fila in range(3):
+                for columna in range(3):
+                    x = grupo + columna * separacion
+                    y = 80 + fila * separacion
+                    svg += circulo(x, y)
+
+    elif actividad == "🎨 Similitud":
+        for fila in range(3):
+            for columna in range(7):
+                x = 100 + columna * 65
+                y = 65 + fila * 65
+                color = (
+                    "#FFB703"
+                    if columna in [1, 3, 5]
+                    else "#4361EE"
+                )
+
+                if variante == 1:
+                    color = (
+                        "#FFB703"
+                        if fila == 1
+                        else "#4361EE"
+                    )
+
+                svg += circulo(x, y, color, 20)
+
+    elif actividad == "🧩 Cierre":
+        svg += """
+        <circle cx="300" cy="130" r="80"
+        fill="none" stroke="#4361EE"
+        stroke-width="13"
+        stroke-dasharray="100 35 100 35 100 35"/>
+        """
+
+        if variante == 1:
+            svg += """
+            <circle cx="300" cy="130" r="80"
+            fill="none" stroke="#FFB703"
+            stroke-width="5"/>
+            """
+
+    elif actividad == "➡️ Continuidad":
+        svg += """
+        <path d="M40 210 Q300 -80 560 210"
+        fill="none" stroke="#4361EE"
+        stroke-width="9" stroke-linecap="round"/>
+
+        <path d="M40 50 Q300 340 560 50"
+        fill="none" stroke="#FFB703"
+        stroke-width="9" stroke-linecap="round"/>
+        """
+
+    elif actividad == "👀 Figura y fondo":
+        svg += """
+        <rect x="80" y="20" width="440" height="220"
+        rx="18" fill="#233451"/>
+
+        <path d="M80 20 H520 V240 H80 Z
+        M215 30 C175 80 175 180 215 230
+        L385 230 C425 180 425 80 385 30 Z"
+        fill="#FFFFFF" fill-rule="evenodd"/>
+
+        <path d="M265 30 C250 80 250 180 265 230
+        L335 230 C350 180 350 80 335 30 Z"
+        fill="#FFB703"/>
+        """
+
+    elif actividad == "🐟 Destino común":
+        direcciones = (
+            [1, 1, 1, -1, -1]
+            if variante == 0
+            else [-1, -1, 1, 1, 1]
+        )
+
+        for i, direccion in enumerate(direcciones):
+            x = 80 + i * 105
+            y = 120 + (i % 2) * 30
+            simbolo = "➜" if direccion == 1 else "⬅"
+            color = "#4361EE" if direccion == 1 else "#FFB703"
+
+            svg += (
+                f'<text x="{x}" y="{y}" '
+                f'font-size="60" fill="{color}">'
+                f'{simbolo}</text>'
+            )
+
+    elif actividad == "⭐ Simetría":
+        svg += """
+        <line x1="300" y1="20" x2="300" y2="240"
+        stroke="#233451" stroke-width="3"
+        stroke-dasharray="8 8"/>
+
+        <path d="M300 35 L220 90 L250 150
+        L200 210 L300 230 Z"
+        fill="#4361EE"/>
+        """
+
+        if variante == 1:
+            svg += """
+            <path d="M300 35 L380 90 L350 150
+            L400 210 L300 230 Z"
+            fill="#FFB703"/>
+            """
+
+    svg += "</svg>"
+    mostrar_svg(svg)
+
+
+# --------------------------------------------------
+# MENÚ LATERAL
+# --------------------------------------------------
+
+with st.sidebar:
+    st.title("🧠 Gestalt Kids")
+    st.write("¡Aprende jugando!")
+
+    st.markdown("### 🎮 Elige una actividad")
+
+    opciones = ["🏠 Inicio"] + ACTIVIDADES
+
+    seleccion = st.radio(
+        "Navegación",
+        opciones,
+        index=opciones.index(st.session_state.pagina),
+        label_visibility="collapsed"
+    )
+
+    if seleccion != st.session_state.pagina:
+        navegar(seleccion)
+
     st.divider()
-    st.caption('Consejo: habla con un amigo o familiar sobre dónde ves este principio en tu vida diaria.')
+
+    progreso = len(st.session_state.completadas)
+
+    st.progress(progreso / 7)
+
+    st.markdown(f"### ⭐ {progreso} de 7 estrellas")
+
+    st.caption("¡Completa los siete retos!")
+
+    if st.button("🔄 Reiniciar progreso"):
+        st.session_state.completadas = set()
+        st.session_state.respuestas = {}
+        navegar("🏠 Inicio")
+
+
+# --------------------------------------------------
+# PANTALLA DE INICIO
+# --------------------------------------------------
+
+if st.session_state.pagina == "🏠 Inicio":
+
+    st.markdown("""
+    <div class="hero">
+        <h1>🌈 ¡Bienvenido a Gestalt Kids!</h1>
+        <p>
+        Tu cerebro es un detective.
+        Descubre formas, grupos y patrones
+        en todo lo que ves.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.header("🧠 ¿Qué es la Gestalt?")
+
+    st.write(
+        "La Gestalt nos ayuda a entender cómo nuestro "
+        "cerebro organiza lo que vemos. "
+        "¡A veces encontramos figuras y grupos "
+        "sin darnos cuenta!"
+    )
+
+    st.info(
+        "👈 Elige una actividad en el menú de la izquierda. "
+        "Observa, juega y gana estrellas."
+    )
+
+    st.subheader("🎮 Tus siete aventuras")
+
+    for inicio in range(0, len(ACTIVIDADES), 2):
+
+        columnas = st.columns(2)
+
+        for j, columna in enumerate(columnas):
+            indice = inicio + j
+
+            if indice >= len(ACTIVIDADES):
+                continue
+
+            actividad = ACTIVIDADES[indice]
+
+            with columna:
+                estado = (
+                    "⭐ ¡Completado!"
+                    if actividad in st.session_state.completadas
+                    else "🎮 Listo para jugar"
+                )
+
+                st.markdown(
+                    f"""
+                    <div class="card">
+                        <h3>{actividad}</h3>
+                        <p>{EXPLICACIONES[actividad]}</p>
+                        <strong>{estado}</strong>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                if st.button(
+                    f"Explorar {actividad}",
+                    key=f"inicio_{indice}"
+                ):
+                    navegar(actividad)
+
+
+# --------------------------------------------------
+# PANTALLAS DE ACTIVIDADES
+# --------------------------------------------------
+
+else:
+
+    actividad = st.session_state.pagina
+    indice = ACTIVIDADES.index(actividad)
+
+    st.title(actividad)
+
+    st.markdown(
+        f"""
+        <div class="hero">
+            <h3>🧠 Descubre el principio</h3>
+            <p>{EXPLICACIONES[actividad]}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.subheader("👀 Observa y experimenta")
+
+    variante = st.slider(
+        "Cambia el ejemplo",
+        min_value=0,
+        max_value=1,
+        value=0,
+        key=f"slider_{indice}"
+    )
+
+    ilustracion(actividad, variante)
+
+    st.caption(
+        "Mueve el control para descubrir "
+        "cómo cambia lo que percibes."
+    )
+
+    st.divider()
+
+    st.subheader("🎯 ¡Tu reto!")
+
+    pregunta, opciones, correcta = PREGUNTAS[actividad]
+
+    st.write(pregunta)
+
+    respuesta = st.radio(
+        "Selecciona tu respuesta:",
+        opciones,
+        index=None,
+        key=f"pregunta_{indice}"
+    )
+
+    if st.button(
+        "✨ Comprobar respuesta",
+        key=f"comprobar_{indice}"
+    ):
+
+        if respuesta is None:
+            st.warning("Selecciona una respuesta primero.")
+
+        elif respuesta == opciones[correcta]:
+
+            completar(actividad)
+
+            st.session_state.respuestas[actividad] = True
+
+        else:
+            st.session_state.respuestas[actividad] = False
+
+    if actividad in st.session_state.respuestas:
+
+        if st.session_state.respuestas[actividad]:
+            st.success(
+                "🎉 ¡Excelente! Ganaste una estrella. "
+                "¡Tu cerebro es increíble!"
+            )
+        else:
+            st.error(
+                "¡Buen intento! Observa otra vez "
+                "y vuelve a probar."
+            )
+
+    st.divider()
+
+    columna1, columna2 = st.columns(2)
+
+    with columna1:
+        if st.button("🏠 Volver al inicio"):
+            navegar("🏠 Inicio")
+
+    with columna2:
+        if indice < len(ACTIVIDADES) - 1:
+            siguiente = ACTIVIDADES[indice + 1]
+
+            if st.button("➡️ Siguiente actividad"):
+                navegar(siguiente)
+
+        else:
+            if st.button("🏆 Ver mis estrellas"):
+                navegar("🏠 Inicio")
+
+
+# --------------------------------------------------
+# MENSAJE FINAL
+# --------------------------------------------------
+
+if len(st.session_state.completadas) == 7:
+
+    st.success(
+        "🏆 ¡FELICIDADES! "
+        "Completaste las siete actividades Gestalt."
+    )
+
+    st.markdown(
+        "### 🌟 ¡Ahora eres un detective visual!"
+    )
